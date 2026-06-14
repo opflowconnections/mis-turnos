@@ -76,6 +76,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-
 .cal-day.has-shift.dormida::before{background:#7d6ba8;}
 .cal-day.has-shift.libre::before{background:var(--tx3);opacity:.4;}
 .cal-day.has-cambio::after{content:'';position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--dim);}
+.cal-park-ico{position:absolute;top:3px;left:5px;font-size:9px;line-height:1;}
 .cal-dn{font-size:15px;font-weight:600;color:var(--tx2);line-height:1;}
 .cal-tag{font-size:8px;font-weight:700;color:var(--tx2);margin-top:3px;letter-spacing:.3px;}
 .card{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:12px;box-shadow:var(--sh2);}
@@ -296,6 +297,16 @@ textarea.finput{resize:none;height:80px;font-size:15px;}
         <label class="flabel">Incidencia</label>
         <input type="text" class="finput" id="f_inc" placeholder="Retraso, averia, novedad...">
       </div>
+      <div class="fg">
+        <label class="flabel">Retraso (minutos extra como Activo)</label>
+        <div class="trow">
+          <input type="number" class="finput" id="f_retraso" placeholder="0" min="0" step="1" style="flex:1">
+          <div class="tchip" onclick="addRetraso(15)">+15</div>
+          <div class="tchip" onclick="addRetraso(30)">+30</div>
+          <div class="tchip" onclick="addRetraso(60)">+60</div>
+          <div class="tchip" onclick="document.getElementById('f_retraso').value=0">0</div>
+        </div>
+      </div>
     </div>
     <div class="fg"><label class="flabel">Notas</label><textarea class="finput" id="f_notas" placeholder="Observaciones..."></textarea></div>
     <button class="btn-main" onclick="saveShift()">Guardar turno</button>
@@ -461,15 +472,157 @@ function nightMins(salT, llegT) {
   return night;
 }
 
+// Minutos de hueco entre el fin de este turno y el inicio del siguiente turno del mismo dia (si existe)
+function gapToNext(s) {
+  if (s.tipo === 'LIBRE' || !s.fecha || !s.sal) return 0;
+  var end = (s.tipo === 'IV' && s.vlleg) ? s.vlleg : s.lleg;
+  if (!end) return 0;
+  // si el turno cruza medianoche (fin "antes" que el inicio en reloj de 24h), el fin real cae en la
+  // madrugada del mismo dia de calendario del siguiente turno; en ese caso comparamos directamente
+  var crossesMidnight = end <= s.sal;
+  var next = null, i;
+  for (i = 0; i < shifts.length; i++) {
+    var o = shifts[i];
+    if (o.id === s.id) continue;
+    if (o.fecha !== s.fecha || o.tipo === 'LIBRE' || !o.sal) continue;
+    var candidate;
+    if (crossesMidnight) {
+      // "end" ya esta en la madrugada; el siguiente turno debe empezar despues de esa hora (mismo reloj)
+      candidate = o.sal > end;
+    } else {
+      // turno normal dentro del mismo dia; el siguiente debe empezar despues de que termine este
+      candidate = o.sal >= end;
+    }
+    if (candidate && (!next || o.sal < next.sal)) next = o;
+  }
+  if (!next) return 0;
+  var gap = crossesMidnight ? (function(){
+    var pe = end.split(':'), ns = next.sal.split(':');
+    return (parseInt(ns[0])*60+parseInt(ns[1])) - (parseInt(pe[0])*60+parseInt(pe[1]));
+  })() : td(end, next.sal);
+  if (gap <= 0 || gap >= 1440) return 0;
+  return gap;
+}
+
+
+// ESTACIONES DE MADRID (solo Chamartin y Atocha cuentan para Parking)
+function isMadrid(s) {
+  var n = enombre(s);
+  return n === 'Madrid-Chamartin' || n === 'Madrid-Atocha';
+}
+
+// Dado un turno DORMIDA, devuelve el primer turno de la cadena (recorriendo hacia atras
+// mientras el dia anterior tenga una DORMIDA)
+function dormidaChainStart(s) {
+  var cur = s, i;
+  while (cur.tipo === 'DORMIDA') {
+    var d = new Date(cur.fecha + 'T12:00:00');
+    d.setDate(d.getDate() - 1);
+    var pds = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+    var prev = null;
+    for (i = 0; i < shifts.length; i++) {
+      if (shifts[i].fecha === pds && shifts[i].tipo === 'DORMIDA') { prev = shifts[i]; break; }
+    }
+    if (!prev) break;
+    cur = prev;
+  }
+  return cur;
+}
+
+// Dado un turno DORMIDA, devuelve el ultimo turno de la cadena (recorriendo hacia adelante)
+function dormidaChainEnd(s) {
+  var cur = s, i;
+  while (cur.tipo === 'DORMIDA') {
+    var d = new Date(cur.fecha + 'T12:00:00');
+    d.setDate(d.getDate() + 1);
+    var nds = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+    var next = null;
+    for (i = 0; i < shifts.length; i++) {
+      if (shifts[i].fecha === nds && shifts[i].tipo === 'DORMIDA') { next = shifts[i]; break; }
+    }
+    if (!next) break;
+    cur = next;
+  }
+  return cur;
+}
+
+// Comprueba si un turno (o la cadena de Dormidas a la que pertenece) requiere aviso de Parking
+// Devuelve: null (sin aviso), 'checkin', 'checkout', o 'checkin+checkout'
+function checkParking(s) {
+  if (s.tipo === 'LIBRE') return null;
+  var start = s, end = s;
+  if (s.tipo === 'DORMIDA') {
+    start = dormidaChainStart(s);
+    end = dormidaChainEnd(s);
+  }
+  var checkin = false, checkout = false;
+  if (start.sal && isMadrid(start.origen) && start.sal < '06:30') checkin = true;
+  var endLleg = (end.tipo === 'IV' && end.vlleg) ? end.vlleg : end.lleg;
+  var endDest = end.destino;
+  if (endLleg && isMadrid(endDest) && endLleg >= '23:30') checkout = true;
+  if (checkin && checkout) return 'checkin+checkout';
+  if (checkin) return 'checkin';
+  if (checkout) return 'checkout';
+  return null;
+}
+
+// Primer turno del dia (por hora de salida), excluyendo LIBRE
+function firstOfDay(ds) {
+  var first = null, i;
+  for (i = 0; i < shifts.length; i++) {
+    if (shifts[i].fecha === ds && shifts[i].tipo !== 'LIBRE' && shifts[i].sal) {
+      if (!first || shifts[i].sal < first.sal) first = shifts[i];
+    }
+  }
+  return first;
+}
+// Ultimo turno del dia (por hora de fin: vlleg si IV, sino lleg), excluyendo LIBRE
+function lastOfDay(ds) {
+  var last = null, lastEnd = null, i;
+  for (i = 0; i < shifts.length; i++) {
+    var o = shifts[i];
+    if (o.fecha === ds && o.tipo !== 'LIBRE' && o.sal) {
+      var end = (o.tipo === 'IV' && o.vlleg) ? o.vlleg : o.lleg;
+      if (!end) continue;
+      if (!last || end > lastEnd) { last = o; lastEnd = end; }
+    }
+  }
+  return last;
+}
+
+// Minutos de check-in (antes del 'sal') si este turno es el primero del dia
+function checkinMins(s) {
+  if (s.tipo === 'LIBRE' || !s.sal) return 0;
+  var first = firstOfDay(s.fecha);
+  if (!first || first.id !== s.id) return 0;
+  return isMadrid(s.origen) ? 60 : 45;
+}
+
+// Minutos de check-out (despues de la llegada final) si este turno es el ultimo del dia
+function checkoutMins(s) {
+  if (s.tipo === 'LIBRE' || !s.sal) return 0;
+  var last = lastOfDay(s.fecha);
+  if (!last || last.id !== s.id) return 0;
+  return isMadrid(s.destino) ? 20 : 15;
+}
+
+// Mini check-in de 30 min antes de la salida de regreso (vsal) en turnos I/V
+function ivMiniCheckinMins(s) {
+  if (s.tipo !== 'IV' || !s.vsal) return 0;
+  return 30;
+}
+
 function ch(s) {
   if (s.tipo === 'LIBRE') return { a:0, p:0, t:0 };
   var i = td(s.sal, s.lleg);
   var v = s.tipo === 'IV' ? td(s.vsal, s.vlleg) : 0;
   var espera = (s.tipo === 'IV' && s.lleg && s.vsal) ? td(s.lleg, s.vsal) : 0;
+  var gap = gapToNext(s);
   var rec = i + v;
-  var t = rec + espera;
-  if (s.mod === 'ACTIVO') return { a:rec, p:espera, t:t };
-  return { a:0, p:rec+espera, t:t };
+  var extra = checkinMins(s) + checkoutMins(s) + ivMiniCheckinMins(s) + (parseInt(s.retraso)||0);
+  var t = rec + espera + gap + extra;
+  if (s.mod === 'ACTIVO') return { a:rec+extra, p:espera+gap, t:t };
+  return { a:extra, p:rec+espera+gap, t:t };
 }
 
 function fd(d) {
@@ -637,6 +790,12 @@ function acTrenV(inp) {
   if (!fvl.value) fvl.value = info.lleg;
 }
 
+function addRetraso(mins) {
+  var f = document.getElementById('f_retraso');
+  var cur = parseInt(f.value) || 0;
+  f.value = cur + mins;
+}
+
 function renderSeries() {
   var h = '';
   for (var i = 0; i < SERIES.length; i++) h += '<div class="schip" onclick="setSerie(\'' + SERIES[i] + '\')">' + SERIES[i] + '</div>';
@@ -687,6 +846,8 @@ function renderCal() {
     sh = shs.length ? shs[0] : null;
     hc = false;
     for (i = 0; i < cambios.length; i++) { if (cambios[i].cedo === ds || cambios[i].recibo === ds) { hc = true; break; } }
+    var hp = false;
+    for (i = 0; i < shs.length; i++) { if (checkParking(shs[i])) { hp = true; break; } }
     it = today.getFullYear() === cy && today.getMonth() === cm && today.getDate() === d;
     el = document.createElement('div'); el.className = 'cal-day';
     if (it) el.classList.add('today');
@@ -700,7 +861,7 @@ function renderCal() {
       else if (sh.tipo === 'DORMIDA') tag = 'DOR';
       else if (sh.tipo === 'LIBRE') tag = 'LIBRE';
     }
-    el.innerHTML = '<span class="cal-dn">' + d + '</span>' + (tag ? '<span class="cal-tag">' + tag + '</span>' : '');
+    el.innerHTML = '<span class="cal-dn">' + d + '</span>' + (tag ? '<span class="cal-tag">' + tag + '</span>' : '') + (hp ? '<span class="cal-park-ico">&#128663;</span>' : '');
     (function(dateStr) { el.onclick = function() { selDay(dateStr); }; })(ds);
     g.appendChild(el);
   }
@@ -730,6 +891,11 @@ function selDay(ds) {
       var badges = '<span class="tag tg">' + tagTxt(sh.tipo) + '</span>';
       if (!libre) badges += ' <span class="tag ' + (sh.mod === 'ACTIVO' ? 'tok' : 'tdim') + '">' + sh.mod + '</span>';
       if (sh.inc) badges += ' <span class="tag tal">! INC</span>';
+      var park = checkParking(sh);
+      if (park) {
+        var parkLbl = park === 'checkin+checkout' ? 'Parking (entrada y salida)' : (park === 'checkin' ? 'Parking (entrada)' : 'Parking (salida)');
+        badges += ' <span class="tag tal">&#128663; ' + parkLbl + '</span>';
+      }
       html += '<div class="day-card"' + (j>0?' style="margin-top:12px;"':'') + '>';
       html += '<div class="dc-head"><div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">' + badges + '</div>';
       html += '<button class="edit-pill" onclick="openEditShift(\'' + sh.id + '\')">Editar</button></div>';
@@ -751,6 +917,12 @@ function selDay(ds) {
             html += '<br><span style="color:var(--tx3)">Descanso previo: ' + hm(rest) + '</span>';
           }
         }
+        var extraParts = [];
+        var cin = checkinMins(sh); if (cin) extraParts.push('Check-in +' + cin + 'm');
+        var cout = checkoutMins(sh); if (cout) extraParts.push('Check-out +' + cout + 'm');
+        var ivmc = ivMiniCheckinMins(sh); if (ivmc) extraParts.push('Mini check-in regreso +' + ivmc + 'm');
+        var retr = parseInt(sh.retraso)||0; if (retr) extraParts.push('Retraso +' + retr + 'm');
+        if (extraParts.length) html += '<br><span style="color:var(--tx3);font-size:12px;">' + extraParts.join(' &middot; ') + '</span>';
         html += '</div>';
         html += '<div class="chips-row" style="margin-top:14px;">';
         html += '<div class="sc"><div class="sc-lbl">Activo</div><div class="sc-val" style="color:var(--ok)">' + hm(h.a) + '</div></div>';
@@ -1323,7 +1495,7 @@ function resetSF() {
   document.getElementById('chip_ld').className='tchip';
   document.getElementById('ivSec').classList.remove('show');
   document.getElementById('serviceFields').style.display='';
-  var ids=['f_origen','f_destino','f_sal','f_lleg','f_vsal','f_vlleg','f_tren','f_trenv','f_serie','f_comp','f_inc','f_notas'];
+  var ids=['f_origen','f_destino','f_sal','f_lleg','f_vsal','f_vlleg','f_tren','f_trenv','f_serie','f_comp','f_inc','f_notas','f_retraso'];
   for (i=0;i<ids.length;i++) document.getElementById(ids[i]).value='';
   var chips=document.querySelectorAll('.schip');
   for (i=0;i<chips.length;i++) chips[i].classList.remove('on');
@@ -1378,6 +1550,7 @@ function openEditShift(id) {
   document.getElementById('f_comp').value=s.comp||'';
   document.getElementById('f_inc').value=s.inc||'';
   document.getElementById('f_notas').value=s.notas||'';
+  document.getElementById('f_retraso').value=s.retraso||'';
   if (s.serie) { var chips=document.querySelectorAll('.schip'); for (i=0;i<chips.length;i++) { if (chips[i].textContent===s.serie) chips[i].classList.add('on'); } }
   document.getElementById('shiftModal').classList.add('open');
 }
@@ -1420,6 +1593,7 @@ function saveShift() {
     serie:document.getElementById('f_serie').value.trim(),
     comp:document.getElementById('f_comp').value.trim(),
     inc:document.getElementById('f_inc').value.trim(),
+    retraso:parseInt(document.getElementById('f_retraso').value)||0,
     notas:document.getElementById('f_notas').value.trim()};
   if (eSid) { for (var i=0;i<shifts.length;i++) { if (shifts[i].id===eSid) { shifts[i]=obj; break; } } }
   else { shifts.push(obj); }
