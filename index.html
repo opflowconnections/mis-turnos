@@ -71,10 +71,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-
 .cal-day.has-shift.iv{background:var(--dim-lt);}
 .cal-day.has-shift.dormida{background:#f0eef6;}
 .cal-day.has-shift.libre{background:var(--s2);}
+.cal-day.has-shift.formacion{background:#eaf1f4;}
 .cal-day.has-shift::before{content:'';position:absolute;left:7px;right:7px;bottom:6px;height:2.5px;border-radius:2px;background:var(--accent);}
 .cal-day.has-shift.iv::before{background:var(--dim);}
 .cal-day.has-shift.dormida::before{background:#7d6ba8;}
 .cal-day.has-shift.libre::before{background:var(--tx3);opacity:.4;}
+.cal-day.has-shift.formacion::before{background:#4a7d94;}
 .cal-day.has-cambio::after{content:'';position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--dim);}
 .cal-park-ico{position:absolute;top:3px;left:5px;font-size:9px;line-height:1;}
 .cal-dn{font-size:15px;font-weight:600;color:var(--tx2);line-height:1;}
@@ -92,6 +94,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-
 .shift-item.iv-item::before{background:var(--dim);}
 .shift-item.dormida-item::before{background:#7d6ba8;}
 .shift-item.libre-item::before{background:var(--tx3);opacity:.4;}
+.shift-item.formacion-item::before{background:#4a7d94;}
 .shift-item:active{transform:scale(.99);opacity:.9;}
 .sdate{text-align:center;min-width:40px;}
 .sdate-num{font-size:25px;font-weight:700;color:var(--tx);line-height:1;letter-spacing:-.5px;}
@@ -104,6 +107,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-
 .tag.tdim{background:var(--dim-lt);color:var(--dim);border-color:#e6d6bb;}
 .tag.tal{background:var(--alert-lt);color:var(--alert);border-color:#e6cac6;}
 .tag.tmt{background:transparent;color:var(--tx3);border-color:var(--line);}
+.tag.tfo{background:#eaf1f4;color:#4a7d94;border-color:#c5dbe3;}
 .sroute{font-size:15px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.2px;}
 .sroute .arr{color:var(--accent);margin:0 5px;font-weight:400;}
 .smeta{font-size:12px;color:var(--tx2);margin-top:4px;line-height:1.5;}
@@ -135,6 +139,7 @@ textarea.finput{resize:none;height:80px;font-size:15px;}
 .seg-btn.on.sok{color:var(--ok);}
 .seg-btn.on.sdim{color:var(--dim);}
 .seg-btn.on.slb{color:var(--tx2);}
+.seg-btn.on.sfo{color:#4a7d94;}
 .trow{display:flex;gap:9px;}
 .tchip{flex:1;background:var(--s2);border:1px solid var(--line);color:var(--tx2);border-radius:var(--rsm);font-size:13px;font-weight:600;padding:13px 8px;cursor:pointer;text-align:center;transition:all .15s;}
 .tchip.on{background:var(--accent-lt);color:var(--accent);border-color:var(--accent-mid);}
@@ -232,11 +237,23 @@ textarea.finput{resize:none;height:80px;font-size:15px;}
     <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="f_fecha"></div>
     <div class="fg">
       <label class="flabel">Tipo de turno</label>
-      <div class="seg" id="seg_tipo">
+      <div class="seg" id="seg_tipo" style="flex-wrap:wrap;">
         <button class="seg-btn on sg" data-v="RESERVA" onclick="setTipo('RESERVA',this)">Reserva</button>
         <button class="seg-btn" data-v="IV" onclick="setTipo('IV',this)">I/V</button>
         <button class="seg-btn" data-v="DORMIDA" onclick="setTipo('DORMIDA',this)">Dormida</button>
         <button class="seg-btn" data-v="LIBRE" onclick="setTipo('LIBRE',this)">Libre</button>
+        <button class="seg-btn" data-v="FORMACION" onclick="setTipo('FORMACION',this)">Formacion</button>
+      </div>
+    </div>
+    <div id="formacionFields" style="display:none;">
+      <div class="fsec">Horario de formacion</div>
+      <div class="two">
+        <div class="fg"><label class="flabel">Hora inicio</label><input type="time" class="finput" id="fo_sal"></div>
+        <div class="fg"><label class="flabel">Hora fin</label><input type="time" class="finput" id="fo_lleg"></div>
+      </div>
+      <div class="fg">
+        <label class="flabel">Lugar</label>
+        <input type="text" class="finput" id="fo_lugar" placeholder="Ej: Centro de formacion Madrid" autocomplete="off">
       </div>
     </div>
     <div id="serviceFields">
@@ -246,6 +263,30 @@ textarea.finput{resize:none;height:80px;font-size:15px;}
           <button class="seg-btn on sdim" data-v="PASIVO" onclick="setMod('PASIVO',this)">Pasivo</button>
           <button class="seg-btn" data-v="ACTIVO" onclick="setMod('ACTIVO',this)">Activo</button>
         </div>
+      </div>
+      <div class="fg">
+        <label class="flabel">Puesto</label>
+        <div class="seg" id="seg_puesto">
+          <button class="seg-btn on sg" data-v="CC" onclick="setPuesto('CC',this)">CC</button>
+          <button class="seg-btn" data-v="CP" onclick="setPuesto('CP',this)">CP</button>
+          <button class="seg-btn" data-v="TCF" onclick="setPuesto('TCF',this)">TCF</button>
+          <button class="seg-btn" data-v="JT" onclick="setPuesto('JT',this)">JT</button>
+        </div>
+      </div>
+      <div class="fsec">Material</div>
+      <div class="fg">
+        <label class="flabel">Numero de tren</label>
+        <div class="trow">
+          <input type="text" class="finput" id="f_tren" placeholder="Ej: 02271" style="flex:2" autocomplete="off" oninput="acTren(this)">
+          <div id="chip_ave" class="tchip" onclick="setTrenTipo('AVE')">AVE</div>
+          <div id="chip_ld" class="tchip" onclick="setTrenTipo('LD')">LD</div>
+        </div>
+        <div style="font-size:11px;color:var(--tx3);margin-top:6px;">Si reconocemos el tren, rellenamos origen, destino y horarios automaticamente. Puedes cambiarlos despues.</div>
+      </div>
+      <div class="fg">
+        <label class="flabel">Serie</label>
+        <input type="text" class="finput" id="f_serie" placeholder="Ej: S-102" autocomplete="off">
+        <div class="serie-row" id="serieChips"></div>
       </div>
       <div class="fsec">Trayecto</div>
       <div class="fg">
@@ -264,28 +305,14 @@ textarea.finput{resize:none;height:80px;font-size:15px;}
       </div>
       <div class="iv-sec" id="ivSec">
         <div class="divider"></div>
-        <div class="two">
-          <div class="fg"><label class="flabel">Regreso salida</label><input type="time" class="finput" id="f_vsal"></div>
-          <div class="fg"><label class="flabel">Regreso llegada</label><input type="time" class="finput" id="f_vlleg"></div>
-        </div>
         <div class="fg">
           <label class="flabel">Numero de tren de vuelta</label>
           <input type="text" class="finput" id="f_trenv" placeholder="Ej: 02495" autocomplete="off" oninput="acTrenV(this)">
         </div>
-      </div>
-      <div class="fsec">Material</div>
-      <div class="fg">
-        <label class="flabel">Numero de tren</label>
-        <div class="trow">
-          <input type="text" class="finput" id="f_tren" placeholder="Ej: 02271" style="flex:2" autocomplete="off" oninput="acTren(this)">
-          <div id="chip_ave" class="tchip" onclick="setTrenTipo('AVE')">AVE</div>
-          <div id="chip_ld" class="tchip" onclick="setTrenTipo('LD')">LD</div>
+        <div class="two">
+          <div class="fg"><label class="flabel">Regreso salida</label><input type="time" class="finput" id="f_vsal"></div>
+          <div class="fg"><label class="flabel">Regreso llegada</label><input type="time" class="finput" id="f_vlleg"></div>
         </div>
-      </div>
-      <div class="fg">
-        <label class="flabel">Serie</label>
-        <input type="text" class="finput" id="f_serie" placeholder="Ej: S-102" autocomplete="off">
-        <div class="serie-row" id="serieChips"></div>
       </div>
       <div class="fsec">Servicio</div>
       <div class="fg">
@@ -405,11 +432,11 @@ var cy = new Date().getFullYear();
 var cm = new Date().getMonth();
 var scr = 'calendar';
 var eSid = null, eCid = null, eNid = null, dupSrc = null;
-var sTipo = 'RESERVA', sMod = 'PASIVO', sTren = null, sCTipo = 'HORAS', selDate = null;
+var sTipo = 'RESERVA', sMod = 'PASIVO', sPuesto = 'CC', sTren = null, sCTipo = 'HORAS', selDate = null;
 
 var MO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var DW = ['Dom','Lun','Mar','Mie','Jue','Vie','Sab'];
-var SERIES = ['S-100','S-102','S-103','S-104','S-106','S-107','S-111','S-112','S-114','S-121','S-130'];
+var SERIES = ['S-100','S-102','S-103','S-104','S-106','S-107','S-111','S-112','S-114','S-120','S-121','S-130'];
 var EST = {
   'CHA':'Madrid-Chamartin','ATO':'Madrid-Atocha','SAN':'Sanabria AV',
   'BSN':'Basauri','BIL':'Bilbao-Abando','GIJ':'Gijon',
@@ -614,6 +641,7 @@ function ivMiniCheckinMins(s) {
 
 function ch(s) {
   if (s.tipo === 'LIBRE') return { a:0, p:0, t:0 };
+  if (s.tipo === 'FORMACION') { var fm = td(s.sal, s.lleg); return { a:fm, p:0, t:fm }; }
   var i = td(s.sal, s.lleg);
   var v = s.tipo === 'IV' ? td(s.vsal, s.vlleg) : 0;
   var espera = (s.tipo === 'IV' && s.lleg && s.vsal) ? td(s.lleg, s.vsal) : 0;
@@ -720,6 +748,7 @@ function itemCls(tipo) {
   if (tipo === 'IV') return 'iv-item';
   if (tipo === 'DORMIDA') return 'dormida-item';
   if (tipo === 'LIBRE') return 'libre-item';
+  if (tipo === 'FORMACION') return 'formacion-item';
   return '';
 }
 function calCls(tipo) { return tipo === 'IV' ? 'iv' : tipo.toLowerCase(); }
@@ -860,6 +889,7 @@ function renderCal() {
       else if (sh.tipo === 'IV') tag = 'I/V';
       else if (sh.tipo === 'DORMIDA') tag = 'DOR';
       else if (sh.tipo === 'LIBRE') tag = 'LIBRE';
+      else if (sh.tipo === 'FORMACION') tag = 'FORM';
     }
     el.innerHTML = '<span class="cal-dn">' + d + '</span>' + (tag ? '<span class="cal-tag">' + tag + '</span>' : '') + (hp ? '<span class="cal-park-ico">&#128663;</span>' : '');
     (function(dateStr) { el.onclick = function() { selDay(dateStr); }; })(ds);
@@ -900,12 +930,17 @@ function selDay(ds) {
       html += '<div class="dc-head"><div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">' + badges + '</div>';
       html += '<button class="edit-pill" onclick="openEditShift(\'' + sh.id + '\')">Editar</button></div>';
       if (!libre) {
-        html += '<div class="dc-route">' + enombre(sh.origen) + ' <span class="arr"> &rarr; </span>' + enombre(sh.destino) + '</div>';
+        if (sh.tipo === 'FORMACION') {
+          html += '<div class="dc-route">' + (sh.origen ? enombre(sh.origen) : 'Formacion') + '</div>';
+        } else {
+          html += '<div class="dc-route">' + enombre(sh.origen) + ' <span class="arr"> &rarr; </span>' + enombre(sh.destino) + '</div>';
+        }
         html += '<div class="dc-meta">';
         html += (sh.sal||'--') + ' &rarr; ' + (sh.lleg||'--');
         if (sh.tipo === 'IV' && sh.vsal) html += '<br>Regreso: ' + sh.vsal + ' &rarr; ' + (sh.vlleg||'--');
         if (sh.tren) html += '<br>Tren: ' + (sh.ttipo||'') + ' ' + sh.tren + (sh.serie ? ' / ' + sh.serie : '');
         if (sh.tipo === 'IV' && sh.trenv) html += '<br>Tren regreso: ' + sh.trenv;
+        if (sh.puesto) html += '<br>Puesto: ' + sh.puesto;
         if (sh.comp) html += '<br>Comp: ' + sh.comp;
         if (sh.inc)  html += '<br><span style="color:var(--alert)">' + sh.inc + '</span>';
         if (sh.notas) html += '<br>' + sh.notas;
@@ -973,7 +1008,7 @@ function renderList() {
   var html = '';
   html += '<div class="fg" style="margin-bottom:10px;"><input type="text" class="finput" id="listSearch" placeholder="Buscar estacion, tren o companero..." value="' + listQuery.replace(/"/g,'&quot;') + '" oninput="onListSearch(this.value)"></div>';
   html += '<div class="seg" id="seg_listfilter" style="margin-bottom:14px;">';
-  var filters = [['TODOS','Todos'],['RESERVA','Reserva'],['IV','I/V'],['DORMIDA','Dormida'],['LIBRE','Libre']];
+  var filters = [['TODOS','Todos'],['RESERVA','Reserva'],['IV','I/V'],['DORMIDA','Dormida'],['LIBRE','Libre'],['FORMACION','Formacion']];
   for (var k = 0; k < filters.length; k++) {
     var on = listFilter === filters[k][0] ? ' on sg' : '';
     html += '<button class="seg-btn' + on + '" onclick="setListFilter(\'' + filters[k][0] + '\')" style="font-size:11px;padding:9px 2px;">' + filters[k][1] + '</button>';
@@ -1020,9 +1055,14 @@ function renderListItems() {
     if (hc)    html += ' <span class="tag tmt">cambio</span>';
     html += '</div>';
     if (!libre) {
-      html += '<div class="sroute">' + enombre(s.origen) + '<span class="arr"> &rarr; </span>' + enombre(s.destino) + '</div>';
+      if (s.tipo === 'FORMACION') {
+        html += '<div class="sroute">' + (s.origen ? s.origen : 'Formacion') + '</div>';
+      } else {
+        html += '<div class="sroute">' + enombre(s.origen) + '<span class="arr"> &rarr; </span>' + enombre(s.destino) + '</div>';
+      }
       html += '<div class="smeta">' + (s.sal||'--') + ' &rarr; ' + (s.lleg||'--');
       if (s.tren) html += ' &middot; ' + (s.ttipo||'') + ' ' + s.tren;
+      if (s.puesto) html += ' &middot; ' + s.puesto;
       if (s.comp) html += ' &middot; ' + s.comp;
       html += '</div>';
     } else {
@@ -1072,6 +1112,28 @@ function renderCambios() {
 }
 
 // RESUMEN
+function countDormidaNights(year, month) {
+  // Cuenta "noches de dormida" = pares de dias DORMIDA consecutivos.
+  // Si hay 2 dias DORMIDA seguidos = 1 noche. Si hay 3 seguidos = 2 noches.
+  // Cada noche se atribuye al mes del PRIMER dia del par (el dia en que empiezas a dormir fuera).
+  var dormidaDates = {};
+  for (var i = 0; i < shifts.length; i++) {
+    if (shifts[i].tipo === 'DORMIDA') dormidaDates[shifts[i].fecha] = true;
+  }
+  var nights = 0;
+  for (var ds in dormidaDates) {
+    var d = new Date(ds + 'T12:00:00');
+    var next = new Date(d);
+    next.setDate(next.getDate() + 1);
+    var nds = next.getFullYear() + '-' + pad(next.getMonth()+1) + '-' + pad(next.getDate());
+    if (dormidaDates[nds]) {
+      // hay noche entre ds y nds; se atribuye al mes/anyo de ds
+      if (d.getFullYear() === year && d.getMonth() === month) nights++;
+    }
+  }
+  return nights;
+}
+
 function renderResumen() {
   var ms = [], i;
   for (i = 0; i < shifts.length; i++) {
@@ -1081,14 +1143,16 @@ function renderResumen() {
   var mA=0,mP=0,tA=0,tP=0;
   for (i=0;i<ms.length;i++) { var h=ch(ms[i]); mA+=h.a; mP+=h.p; }
   for (i=0;i<shifts.length;i++) { var h=ch(shifts[i]); tA+=h.a; tP+=h.p; }
-  var res=0,iv=0,dor=0,lib=0,inc=0;
+  var res=0,iv=0,dor=0,lib=0,inc=0,form=0;
   for (i=0;i<ms.length;i++) {
     if (ms[i].tipo==='RESERVA') res++;
     else if (ms[i].tipo==='IV') iv++;
-    else if (ms[i].tipo==='DORMIDA') dor++;
+    else if (ms[i].tipo==='DORMIDA') {} // se cuenta mas abajo por noches, no por dia
     else if (ms[i].tipo==='LIBRE') lib++;
+    else if (ms[i].tipo==='FORMACION') form++;
     if (ms[i].inc) inc++;
   }
+  dor = countDormidaNights(cy, cm);
   var tc=0,tr=0;
   for (i=0;i<cambios.length;i++) { tc+=parseFloat(cambios[i].hc)||0; tr+=parseFloat(cambios[i].hr)||0; }
 
@@ -1113,8 +1177,9 @@ function renderResumen() {
   html += '<div class="card"><div class="card-title">Tipos de turno</div>';
   html += '<div class="stat-row"><span class="stat-lbl">Reservas</span><span class="stat-val">' + res + '</span></div>';
   html += '<div class="stat-row"><span class="stat-lbl">I/V</span><span class="stat-val">' + iv + '</span></div>';
-  html += '<div class="stat-row"><span class="stat-lbl">Dormidas</span><span class="stat-val">' + dor + '</span></div>';
+  html += '<div class="stat-row"><span class="stat-lbl">Dormidas (noches)</span><span class="stat-val">' + dor + '</span></div>';
   html += '<div class="stat-row"><span class="stat-lbl">Dias libres</span><span class="stat-val">' + lib + '</span></div>';
+  if (form) html += '<div class="stat-row"><span class="stat-lbl">Formacion</span><span class="stat-val">' + form + '</span></div>';
   if (inc) html += '<div class="stat-row"><span class="stat-lbl" style="color:var(--alert)">Con incidencia</span><span class="stat-val" style="color:var(--alert)">' + inc + '</span></div>';
   html += '</div>';
   if (topD.length) {
@@ -1336,7 +1401,11 @@ function exportICS() {
       dtStart = icsDate(s.fecha);
       dtEnd = icsDate(addDays(s.fecha, 1));
     } else {
-      title = (s.sal||'') + ' ' + enombre(s.origen||'') + ' -> ' + enombre(s.destino||'');
+      if (s.tipo === 'FORMACION') {
+        title = 'Formacion' + (s.origen ? ': ' + s.origen : '');
+      } else {
+        title = (s.sal||'') + ' ' + enombre(s.origen||'') + ' -> ' + enombre(s.destino||'');
+      }
       var endFecha = s.fecha, endHora = s.lleg || s.sal;
       if (s.tipo === 'IV' && s.vlleg) endHora = s.vlleg;
       // si la hora final es menor que la de salida, asumimos que cae al dia siguiente
@@ -1380,10 +1449,10 @@ function exportCSV() {
     if (parseInt(p[0]) === cy && parseInt(p[1])-1 === cm) ms.push(shifts[i]);
   }
   ms.sort(function(a,b) { return a.fecha.localeCompare(b.fecha); });
-  var rows = [['Fecha','Dia','Tipo','Modalidad','Origen','Salida','Destino','Llegada','Tren','TrenRegreso','Serie','Companero','H.Activo','H.Pasivo','H.Total','Incidencia','Notas']];
+  var rows = [['Fecha','Dia','Tipo','Modalidad','Puesto','Origen','Salida','Destino','Llegada','Tren','TrenRegreso','Serie','Companero','H.Activo','H.Pasivo','H.Total','Incidencia','Notas']];
   for (i = 0; i < ms.length; i++) {
     var s = ms[i], h = ch(s);
-    rows.push([s.fecha,dw(s.fecha),tagTxt(s.tipo),s.mod||'',s.origen||'',s.sal||'',s.destino||'',s.lleg||'',s.tren||'',s.trenv||'',s.serie||'',s.comp||'',hm(h.a),hm(h.p),hm(h.t),s.inc||'',s.notas||'']);
+    rows.push([s.fecha,dw(s.fecha),tagTxt(s.tipo),s.mod||'',s.puesto||'',s.origen||'',s.sal||'',s.destino||'',s.lleg||'',s.tren||'',s.trenv||'',s.serie||'',s.comp||'',hm(h.a),hm(h.p),hm(h.t),s.inc||'',s.notas||'']);
   }
   var lines = [];
   for (i = 0; i < rows.length; i++) {
@@ -1461,18 +1530,19 @@ function importCSV(input) {
       var fecha=fields[0].trim();
       if (!fecha.match(/^\d{4}-\d{2}-\d{2}$/)) { skipped++; continue; }
       var exists=false;
-      var salCsv=fields[5]?fields[5].trim():'';
+      var salCsv=fields[6]?fields[6].trim():'';
       for (var j=0;j<shifts.length;j++) { if (shifts[j].fecha===fecha && (shifts[j].sal||'')===salCsv) { exists=true; break; } }
       if (exists) { skipped++; continue; }
       var tipoRaw=(fields[2]||'').trim().toUpperCase();
       var tipo=tipoRaw==='I/V'?'IV':tipoRaw;
       if (!tipo) { skipped++; continue; }
       shifts.push({ id:uid(), fecha:fecha, tipo:tipo, mod:(fields[3]||'').trim().toUpperCase()||'PASIVO',
-        origen:fields[4]?fields[4].trim():'', sal:fields[5]?fields[5].trim():'',
-        destino:fields[6]?fields[6].trim():'', lleg:fields[7]?fields[7].trim():'',
-        tren:fields[8]?fields[8].trim():'', trenv:fields[9]?fields[9].trim():'', ttipo:null, serie:fields[10]?fields[10].trim():'',
-        comp:fields[11]?fields[11].trim():'', vsal:'', vlleg:'',
-        inc:fields[15]?fields[15].trim():'', notas:fields[16]?fields[16].trim():'' });
+        puesto:fields[4]?fields[4].trim():'',
+        origen:fields[5]?fields[5].trim():'', sal:fields[6]?fields[6].trim():'',
+        destino:fields[7]?fields[7].trim():'', lleg:fields[8]?fields[8].trim():'',
+        tren:fields[9]?fields[9].trim():'', trenv:fields[10]?fields[10].trim():'', ttipo:null, serie:fields[11]?fields[11].trim():'',
+        comp:fields[12]?fields[12].trim():'', vsal:'', vlleg:'',
+        inc:fields[16]?fields[16].trim():'', notas:fields[17]?fields[17].trim():'' });
       imported++;
     }
     sv(); input.value='';
@@ -1486,16 +1556,19 @@ function importCSV(input) {
 
 // SHIFT MODAL
 function resetSF() {
-  sTipo='RESERVA'; sMod='PASIVO'; sTren=null;
+  sTipo='RESERVA'; sMod='PASIVO'; sPuesto='CC'; sTren=null;
   var btns=document.querySelectorAll('#seg_tipo .seg-btn'), i;
-  for (i=0;i<btns.length;i++) { btns[i].classList.remove('on','sg','sok','sdim','slb'); if (btns[i].dataset.v==='RESERVA') btns[i].classList.add('on','sg'); }
+  for (i=0;i<btns.length;i++) { btns[i].classList.remove('on','sg','sok','sdim','slb','sfo'); if (btns[i].dataset.v==='RESERVA') btns[i].classList.add('on','sg'); }
   var mb=document.querySelectorAll('#seg_mod .seg-btn');
   for (i=0;i<mb.length;i++) { mb[i].classList.remove('on','sok','sdim'); if (mb[i].dataset.v==='PASIVO') mb[i].classList.add('on','sdim'); }
+  var pb=document.querySelectorAll('#seg_puesto .seg-btn');
+  for (i=0;i<pb.length;i++) { pb[i].classList.remove('on','sg'); if (pb[i].dataset.v==='CC') pb[i].classList.add('on','sg'); }
   document.getElementById('chip_ave').className='tchip';
   document.getElementById('chip_ld').className='tchip';
   document.getElementById('ivSec').classList.remove('show');
   document.getElementById('serviceFields').style.display='';
-  var ids=['f_origen','f_destino','f_sal','f_lleg','f_vsal','f_vlleg','f_tren','f_trenv','f_serie','f_comp','f_inc','f_notas','f_retraso'];
+  document.getElementById('formacionFields').style.display='none';
+  var ids=['f_origen','f_destino','f_sal','f_lleg','f_vsal','f_vlleg','f_tren','f_trenv','f_serie','f_comp','f_inc','f_notas','f_retraso','fo_sal','fo_lleg','fo_lugar'];
   for (i=0;i<ids.length;i++) document.getElementById(ids[i]).value='';
   var chips=document.querySelectorAll('.schip');
   for (i=0;i<chips.length;i++) chips[i].classList.remove('on');
@@ -1526,17 +1599,25 @@ function openEditShift(id) {
   document.getElementById('dupBtn').style.display='block';
   document.getElementById('delCf').classList.remove('show');
   resetSF();
-  sTipo=s.tipo; sMod=s.mod||'PASIVO'; sTren=s.ttipo||null;
+  sTipo=s.tipo; sMod=s.mod||'PASIVO'; sPuesto=s.puesto||'CC'; sTren=s.ttipo||null;
   var btns=document.querySelectorAll('#seg_tipo .seg-btn');
   for (i=0;i<btns.length;i++) {
-    if (btns[i].dataset.v===s.tipo) { var cls=s.tipo==='RESERVA'?'sg':s.tipo==='IV'?'sok':s.tipo==='DORMIDA'?'sdim':'slb'; btns[i].classList.add('on',cls); }
+    if (btns[i].dataset.v===s.tipo) { btns[i].classList.add('on',tipoColorClass(s.tipo)); }
   }
   var mb=document.querySelectorAll('#seg_mod .seg-btn');
   for (i=0;i<mb.length;i++) { if (mb[i].dataset.v===s.mod) mb[i].classList.add('on',s.mod==='PASIVO'?'sdim':'sok'); }
+  var pb=document.querySelectorAll('#seg_puesto .seg-btn');
+  for (i=0;i<pb.length;i++) { pb[i].classList.remove('on','sg'); if (pb[i].dataset.v===sPuesto) pb[i].classList.add('on','sg'); }
   document.getElementById('chip_ave').className='tchip'+(s.ttipo==='AVE'?' on':'');
   document.getElementById('chip_ld').className='tchip'+(s.ttipo==='LD'?' on':'');
   if (s.tipo==='IV') document.getElementById('ivSec').classList.add('show');
-  if (s.tipo==='LIBRE') document.getElementById('serviceFields').style.display='none';
+  if (s.tipo==='LIBRE'||s.tipo==='FORMACION') document.getElementById('serviceFields').style.display='none';
+  document.getElementById('formacionFields').style.display=(s.tipo==='FORMACION')?'':'none';
+  if (s.tipo==='FORMACION') {
+    document.getElementById('fo_sal').value=s.sal||'';
+    document.getElementById('fo_lleg').value=s.lleg||'';
+    document.getElementById('fo_lugar').value=s.origen||'';
+  }
   document.getElementById('f_fecha').value=s.fecha;
   document.getElementById('f_origen').value=s.origen||'';
   document.getElementById('f_destino').value=s.destino||'';
@@ -1555,13 +1636,21 @@ function openEditShift(id) {
   document.getElementById('shiftModal').classList.add('open');
 }
 
+function tipoColorClass(t) {
+  if (t==='RESERVA') return 'sg';
+  if (t==='IV') return 'sok';
+  if (t==='DORMIDA') return 'sdim';
+  if (t==='FORMACION') return 'sfo';
+  return 'slb';
+}
 function setTipo(t, btn) {
   sTipo=t;
   var btns=document.querySelectorAll('#seg_tipo .seg-btn');
-  for (var i=0;i<btns.length;i++) btns[i].classList.remove('on','sg','sok','sdim','slb');
-  btn.classList.add('on', t==='RESERVA'?'sg':t==='IV'?'sok':t==='DORMIDA'?'sdim':'slb');
+  for (var i=0;i<btns.length;i++) btns[i].classList.remove('on','sg','sok','sdim','slb','sfo');
+  btn.classList.add('on', tipoColorClass(t));
   document.getElementById('ivSec').classList.toggle('show', t==='IV');
-  document.getElementById('serviceFields').style.display=t==='LIBRE'?'none':'';
+  document.getElementById('serviceFields').style.display=(t==='LIBRE'||t==='FORMACION')?'none':'';
+  document.getElementById('formacionFields').style.display=(t==='FORMACION')?'':'none';
 }
 
 function setMod(m, btn) {
@@ -1569,6 +1658,12 @@ function setMod(m, btn) {
   var btns=document.querySelectorAll('#seg_mod .seg-btn');
   for (var i=0;i<btns.length;i++) btns[i].classList.remove('on','sok','sdim');
   btn.classList.add('on', m==='PASIVO'?'sdim':'sok');
+}
+function setPuesto(p, btn) {
+  sPuesto=p;
+  var btns=document.querySelectorAll('#seg_puesto .seg-btn');
+  for (var i=0;i<btns.length;i++) btns[i].classList.remove('on','sg');
+  btn.classList.add('on','sg');
 }
 
 function setTrenTipo(t) {
@@ -1580,7 +1675,7 @@ function setTrenTipo(t) {
 function saveShift() {
   var fecha=document.getElementById('f_fecha').value;
   if (!fecha) { alert('Indica la fecha'); return; }
-  var obj={id:eSid||uid(),fecha:fecha,tipo:sTipo,mod:sMod,
+  var obj={id:eSid||uid(),fecha:fecha,tipo:sTipo,mod:sMod,puesto:sPuesto,
     origen:document.getElementById('f_origen').value.trim(),
     destino:document.getElementById('f_destino').value.trim(),
     sal:document.getElementById('f_sal').value,
@@ -1595,6 +1690,13 @@ function saveShift() {
     inc:document.getElementById('f_inc').value.trim(),
     retraso:parseInt(document.getElementById('f_retraso').value)||0,
     notas:document.getElementById('f_notas').value.trim()};
+  if (sTipo === 'FORMACION') {
+    obj.sal = document.getElementById('fo_sal').value;
+    obj.lleg = document.getElementById('fo_lleg').value;
+    obj.origen = document.getElementById('fo_lugar').value.trim();
+    obj.destino = '';
+    obj.mod = 'ACTIVO';
+  }
   if (eSid) { for (var i=0;i<shifts.length;i++) { if (shifts[i].id===eSid) { shifts[i]=obj; break; } } }
   else { shifts.push(obj); }
   sv();
